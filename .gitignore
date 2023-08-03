@@ -1,0 +1,7 @@
+.vscode
+build/
+index_test/
+*.d
+*.out
+out.*
+perf.*

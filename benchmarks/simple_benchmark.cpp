@@ -54,7 +54,7 @@ void put_thread(DB *db, size_t start, size_t count)
     size_t keybuf;
     Slice k(&keybuf);
     Slice v;
-#ifdef KV_SEPARATION
+#ifdef KV_SEPARATE
     v = Slice(value, FLAGS_value_size);
 #else
     v = Slice(value, 8);

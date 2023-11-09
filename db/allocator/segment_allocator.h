@@ -359,7 +359,7 @@ public:
 
 	void PrintPMUsage(){
 		size_t usage = segment_bitmap_.GetUsedBitsNum() * SEGMENT_SIZE;
-		printf("[Segment allocator] PM usage is %lu\n",usage / 1024 /1024);
+		printf("[Segment allocator] PM usage is %lu MB\n",usage / 1024 /1024);
 	}
 
 private:

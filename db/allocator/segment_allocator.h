@@ -356,5 +356,11 @@ public:
         log_segment_group_[idx].get_elements(list);
     }
 
+
+	void PrintPMUsage(){
+		size_t usage = segment_bitmap_.GetUsedBitsNum() * SEGMENT_SIZE;
+		printf("[Segment allocator] PM usage is %lu\n",usage / 1024 /1024);
+	}
+
 private:
 };

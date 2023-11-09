@@ -284,5 +284,14 @@ private:
         bitmap_[i] = byte;
     }
 
+	inline size_t count_used_bits(){
+		size_t count=0;
+		for(size_t i=0;i+8<roundup(tail_bit_,8);i+=8){
+			size_t n = *(bitmap_+i);
+			count+=__builtin_popcountll(n);
+		}
+		return count;
+	}
+
     DISALLOW_COPY_AND_ASSIGN(BitMap);
 };

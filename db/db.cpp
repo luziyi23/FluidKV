@@ -477,3 +477,9 @@ void DB::WaitForFlushAndCompaction()
     }
     DisableReadOnlyMode();
 }
+
+
+void DB::PrintPMUsage(){
+	printf("---------PM Usage----------\n");
+	segment_allocator_->PrintPMUsage();
+}

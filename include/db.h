@@ -98,6 +98,7 @@ private:
     {
         temp_memtable_size_[idx].fetch_add(size);
     }
+	void PrintPMUsage();
 
 public: // TODO: change to private
     bool MayTriggerFlushOrCompaction();

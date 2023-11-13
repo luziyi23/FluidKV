@@ -275,9 +275,19 @@ int DBClient::Scan(const Slice start_key, int scan_sz, std::vector<uint64_t> &ke
 
 inline bool DBClient::StartWrite()
 {
-    //  1 get memtable idx
+    // 1 get memtable idx
     int old = current_memtable_idx_;
     current_memtable_idx_ = db_->current_memtable_idx_;
+	// if memtable is half-full or full, slow down or stop
+    // if(put_num_in_current_memtable_[current_memtable_idx_] > MAX_MEMTABLE_ENTRIES/8){
+    //     usleep(10);
+    // }
+    // while (put_num_in_current_memtable_[current_memtable_idx_] > MAX_MEMTABLE_ENTRIES/4)
+    // {
+    //     std::this_thread::yield();
+    //     current_memtable_idx_ = db_->current_memtable_idx_;
+    // }
+
     // 2 modify thread state
     if (old != current_memtable_idx_)
     {

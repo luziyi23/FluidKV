@@ -324,6 +324,7 @@ private:
 
     static inline Str make_key(uint64_t int_key, uint64_t &key_buf)
     {
+		// Becasuse masstree use dictionary order to compare, we don't need to bswap.
         // key_buf = __builtin_bswap64(int_key);
         key_buf = int_key;
         return Str((const char *)&key_buf, sizeof(key_buf));

@@ -60,3 +60,4 @@ endif()
 # add_subdirectory(lib/TLBtree-master/Concurrent)
 
 add_subdirectory(benchmarks)
+add_subdirectory(test)

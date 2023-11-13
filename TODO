@@ -1,0 +1,9 @@
+1. Large-grained compaction -> parallelized small-grained compaction (like MatrixKV, with parititioned flush)
+2. Dynamical ~~workload detecting~~ and parameter configuring
+3. Real variable-sized KV (not KV separation). Need to change the size of index-/data- block.
+4. Analyze WA of compaction varying with the Buffer-tree size and number
+
+
+MORE:
+1. Why so much pm consuption?
+2. Analyze the main cause of compaction time: WA or L0 tree num/size?

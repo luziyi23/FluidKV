@@ -17,7 +17,7 @@ DEFINE_uint64(num_ops, 100000000, "Number of operations for each benchmark");
 DEFINE_string(benchmarks, "read", "write: random update, read: random get");
 DEFINE_uint64(threads, 1, "Number of user threads during loading and benchmarking");
 DEFINE_uint64(value_size, 8, "value size, only available with KV separation enabled");
-DEFINE_string(pool_path, "/mnt/pmem/fluidkv", "Directory of target pmem");
+DEFINE_string(pool_path, "/mnt/pmem/pkbench/fluidkv", "Directory of target pmem");
 DEFINE_uint64(pool_size_GB, 40, "Total size of pmem pool");
 DEFINE_bool(recover, false, "Recover an existing db instead of recreating a new one");
 DEFINE_bool(skip_load, false, "Not load data");

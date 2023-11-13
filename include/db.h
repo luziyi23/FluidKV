@@ -31,6 +31,12 @@ struct MemTableStates
     bool thread_write_states[MAX_USER_THREAD_NUM];
 };
 
+struct PartitionInfo
+{
+	size_t min_key;
+	size_t max_key;
+};
+
 class DB
 {
 private:
@@ -58,9 +64,11 @@ private:
     MemTableStates memtable_states_[MAX_MEMTABLE_NUM];
     std::atomic_uint64_t temp_memtable_size_[MAX_MEMTABLE_NUM];
     int current_memtable_idx_;
-
+	
     // control variables
     ThreadPoolImpl *thread_pool_ = nullptr;
+	ThreadPoolImpl *flush_thread_pool_ = nullptr;
+	ThreadPoolImpl *compaction_thread_pool_ = nullptr;
     std::thread *bgwork_trigger_ = nullptr;
     bool read_optimized_mode_ = false;
     bool read_only_mode_ = false;
@@ -76,6 +84,8 @@ public: // TODO: change to private
     Version *current_version_;
     Manifest *manifest_;
     bool stop_bgwork_ = false;
+	PartitionInfo partition_info[RANGE_PARTITION_NUM];
+
 
 public:
     DB(DBConfig cfg = DBConfig());

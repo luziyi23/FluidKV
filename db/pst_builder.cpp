@@ -65,6 +65,7 @@ bool PSTBuilder::AddEntry(Slice key, Slice value)
 // build a indexblock, then flush all of the datablocks and the indexblock
 PSTMeta PSTBuilder::Flush()
 {
+	if(datablock_metas_.empty() && data_writer_->Empty())return PSTMeta::InvalidTable();
     // flushed datablocks
     for (auto &datablock : datablock_metas_)
     {

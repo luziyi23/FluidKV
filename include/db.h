@@ -9,8 +9,7 @@
 #include "slice.h"
 #include "db_common.h"
 #include "db/log_format.h"
-#include "lib/ThreadPool/include/threadpool.h"
-#include "lib/ThreadPool/include/threadpool_imp.h"
+
 
 class DBClient;
 class SegmentAllocator;
@@ -19,6 +18,7 @@ class LogReader;
 class PSTReader;
 class Version;
 class Manifest;
+class ThreadPoolImpl;
 
 struct MemTableStates
 {
@@ -29,12 +29,6 @@ struct MemTableStates
         EMPTY
     } state = EMPTY;
     bool thread_write_states[MAX_USER_THREAD_NUM];
-};
-
-struct PartitionInfo
-{
-	size_t min_key;
-	size_t max_key;
 };
 
 class DB
@@ -67,7 +61,6 @@ private:
 	
     // control variables
     ThreadPoolImpl *thread_pool_ = nullptr;
-	ThreadPoolImpl *flush_thread_pool_ = nullptr;
 	ThreadPoolImpl *compaction_thread_pool_ = nullptr;
     std::thread *bgwork_trigger_ = nullptr;
     bool read_optimized_mode_ = false;
@@ -84,7 +77,8 @@ public: // TODO: change to private
     Version *current_version_;
     Manifest *manifest_;
     bool stop_bgwork_ = false;
-	PartitionInfo partition_info[RANGE_PARTITION_NUM];
+	PartitionInfo partition_info_[RANGE_PARTITION_NUM];
+
 
 
 public:
@@ -108,7 +102,7 @@ private:
     {
         temp_memtable_size_[idx].fetch_add(size);
     }
-	void PrintPMUsage();
+	
 
 public: // TODO: change to private
     bool MayTriggerFlushOrCompaction();
@@ -117,6 +111,7 @@ public: // TODO: change to private
     bool BGCompaction();
     void WaitForFlushAndCompaction();
     void PrintLogGroup(int id);
+	void PrintPMUsage();
     struct TestParams
     {
         DB *db_;

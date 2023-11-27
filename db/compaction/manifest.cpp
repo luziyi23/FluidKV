@@ -26,7 +26,7 @@ Manifest::Manifest(char *pmem_addr, bool recover) : start_(pmem_addr), l0_start_
         printf("recover mode\n");
     }
     DEBUG("start=%lu, l0=%lu,l1=%lu,flush_log=%lu", (size_t)start_, (size_t)l0_start_, (size_t)l1_start_, (size_t)flush_log_start_);
-    DEBUG("l0tail=%lu,l1tail=%lu", super_->l0_tail, super_->l1_tail);
+    INFO("MANIFEST:l0tail=%lu,l1tail=%lu", super_->l0_tail, super_->l1_tail);
 }
 Manifest::~Manifest() {}
 
@@ -74,7 +74,7 @@ Version *Manifest::RecoverVersion(Version *version, SegmentAllocator *allocator)
     version->UpdateLevel0ReadTail();
 
     // recover level1
-    tail = super_->l1_tail;
+    // tail = super_->l1_tail;
     unsigned current_L1_version = super_->l1_current_seq_no;
     DEBUG("l1_version=%u", current_L1_version);
     for (size_t i = 0; i < tail; i++)
@@ -103,6 +103,10 @@ Version *Manifest::RecoverVersion(Version *version, SegmentAllocator *allocator)
     // clean overlapped old PSTs in L1 tree which was not been cleaned in an unfinished comapction due to crash
     version->L1TreeConsistencyCheckAndFix(&pst_deleter, this);
     return version;
+}
+
+void Manifest::PrintL1Info() {
+	printf("[Manifest] l1 tail=%lu, l1_freelist=%lu\n",super_->l1_tail,l1_freelist_.size());
 }
 
 int Manifest::AddTable(PSTMeta meta, int level)
@@ -139,7 +143,7 @@ int Manifest::AddTable(PSTMeta meta, int level)
         {
             idx = super_->l1_tail;
             if (idx * sizeof(PSTMeta) >= L1MetaSize)
-                ERROR_EXIT("Manifest L1 is full!");
+                ERROR_EXIT("Manifest L1 is full, idx=%d!",idx);
             super_->l1_tail++;
         }
         break;

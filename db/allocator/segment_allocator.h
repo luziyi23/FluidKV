@@ -28,6 +28,8 @@ private:
 
     SpinLock mtx_i, mtx_d, mtx_s; // lock the cache for poping element
 
+	std::atomic_uint64_t log_seg_num_=0,sort_seg_num_=0;
+
 public:
     SegmentAllocator(std::string pool_path, size_t pool_size, std::string ssd_path = "", bool recover=false) : pool_path_(pool_path), pool_size_(pool_size), ssd_path_(ssd_path), start_addr_(nullptr), segment_bitmap_(pool_size_ / SEGMENT_SIZE, true), log_segment_bitmap_(pool_size_ / SEGMENT_SIZE, true), current_log_group_(0)
     {
@@ -132,6 +134,7 @@ public:
             ERROR_EXIT("log segment allocation failed, space not enough");
         }
         log_segment_group_[group_id].add(id);
+		log_seg_num_++;
         return new LogSegment(start_addr_, id);
     };
     SortedSegment *AllocSortedSegment(int page_size, bool is_data = 0)
@@ -178,6 +181,7 @@ public:
         {
             type = PBlockType::INDEX512_TO_BLOCK512;
         }
+		sort_seg_num_++;
         SortedSegment *seg = new SortedSegment(start_addr_, id, type, page_size);
         return seg;
     };
@@ -269,11 +273,13 @@ public:
             {
                 std::lock_guard<SpinLock> lock(mtx_i);
                 index_segment_cache_.emplace(seg);
+				DEBUG("reuse segment %lu",seg->segment_id_);
             }
             else if (type == PBlockType::DATABLOCK512)
             {
                 std::lock_guard<SpinLock> lock(mtx_d);
                 data_segment_cache_.emplace(seg);
+				DEBUG("reuse segment %lu",seg->segment_id_);
             }
             return true;
         }
@@ -305,6 +311,7 @@ public:
         assert(ret);
         log_segment_bitmap_.PersistToPM();
         delete seg;
+		log_seg_num_--;
         return true;
     };
     LogSegment *GetLogSegment(size_t id)
@@ -358,8 +365,10 @@ public:
 
 
 	void PrintPMUsage(){
-		size_t usage = segment_bitmap_.GetUsedBitsNum() * SEGMENT_SIZE;
-		printf("[Segment allocator] PM usage is %lu MB\n",usage / 1024 /1024);
+		size_t used = segment_bitmap_.GetUsedBitsNum();
+		size_t freed = data_segment_cache_.size() + index_segment_cache_.size();
+		size_t usage = (used - freed) * SEGMENT_SIZE;
+		printf("[Segment allocator] PM usage is %lu MB, inbitmap=%lu,instack=%lu,log=%lu,sort=%lu\n",usage / 1024 /1024,used,freed,log_seg_num_.load(),sort_seg_num_.load());
 	}
 
 private:

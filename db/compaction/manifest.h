@@ -19,7 +19,7 @@
 #include "db/table.h"
 #include <queue>
 #define L0MetaSize 51200000
-#define L1MetaSize 128000000
+#define L1MetaSize 512000000
 // Each log group can cotain MAX_USER_THREAD_NUM * 8 log segments, which have an 4-byte id
 #define OpLogSize (4 * MAX_MEMTABLE_NUM * MAX_USER_THREAD_NUM * 32)
 #define ManifestSize (32 + L0MetaSize + L1MetaSize + OpLogSize)
@@ -78,6 +78,8 @@ public:
     bool GetFlushLog(std::vector<uint64_t>& deleted_log_segment_ids);
 
     Version *RecoverVersion(Version *source,SegmentAllocator* allocator);
+
+	void PrintL1Info();
 
 private:
     inline const char *GetAddr(int level, int idx);

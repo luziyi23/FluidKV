@@ -88,6 +88,10 @@ public:
         if (pst_iter_)
             delete pst_iter_;
     }
+	/**
+	 * @brief Mark the PST as an reused PST so that the cleaning step will not delete it from L1 index.
+	 * 
+	 */
     void MarkPst() { pst_list_[current_pst_idx_].level = NotOverlappedMark; }
     inline TaggedPstMeta GetPst() { return pst_list_[current_pst_idx_]; }
 
@@ -139,4 +143,21 @@ public:
     {
         return current_pst_idx_ < pst_list_.size();
     }
+
+	/**
+	 * @brief move current_pst_index_ to the pst which have the range with key
+	 * 
+	 * @param key 
+	 * @return true 
+	 * @return false 
+	 */
+	bool MoveTo(size_t key){
+		while (__bswap_64(pst_list_[current_pst_idx_].meta.max_key_) < __bswap_64(key))
+		{
+			current_pst_idx_++;
+			if(current_pst_idx_ >=  pst_list_.size())return false;
+		}
+		// DEBUG2("key=%lx move to %lx",__bswap_64(key),__bswap_64(pst_list_[current_pst_idx_].meta.max_key_));
+		return true;
+	}
 };

@@ -44,6 +44,7 @@ bool DataBlockWriterPm::AddEntry(Slice key, Slice value)
 
             current_block512->add_entry(*reinterpret_cast<const uint64_t *>(key.data()), *reinterpret_cast<const uint64_t *>(value.data()));
             LOG("add entry in datablock: size=%d,%lu:%lu", current_block512->size, key.ToUint64Bswap(), *reinterpret_cast<const uint64_t *>(value.data()));
+			num++;
             return true;
         }
     }
@@ -111,6 +112,7 @@ uint64_t DataBlockWriterPm::Flush()
             pmem_memcpy_persist(blocks_buf_.pm_page_addr, &blocks_buf_.data_buf, sizeof(PDataBlock));
         }
         blocks_buf_.clear();
+		num=0;
         return pm_block_addr;
     }
     return INVALID_PTR;
@@ -198,4 +200,5 @@ int DataBlockWriterPm::PersistCheckpoint()
     used_segments_.clear();
     return size;
 }
+int DataBlockWriterPm::Empty() { return num==0; }
 int DataBlockWriterSsd::PersistCheckpoint() { return 0; }

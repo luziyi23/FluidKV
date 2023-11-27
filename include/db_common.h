@@ -115,3 +115,9 @@ struct FilePtr
         return fd == b.fd && offset == b.offset;
     }
 };
+
+struct PartitionInfo
+{
+	size_t min_key;
+	size_t max_key;
+};

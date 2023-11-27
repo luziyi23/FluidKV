@@ -175,11 +175,12 @@ private:
     }
 };
 
+
+static SpinLock write_delete_locks[1024];
 /**
  * @brief 512 Bytes header + 1024 Bytes bitmap + 8189 * 512-Byte blocks = 4 MB
  *
  */
-static SpinLock write_delete_locks[1024];
 class SortedSegment : public BaseSegmentMeta
 {
 public:

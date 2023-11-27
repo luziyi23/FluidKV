@@ -6,6 +6,8 @@
 #include "compaction/compaction.h"
 #include "lib/index_masstree.h"
 #include "util/stopwatch.hpp"
+#include "lib/ThreadPool/include/threadpool.h"
+#include "lib/ThreadPool/include/threadpool_imp.h"
 #ifdef HOT_MEMTABLE
 #include "lib/index_hot.h"
 #endif
@@ -17,14 +19,14 @@ void BGWorkTrigger(DB *db)
 		bool ret = db->MayTriggerFlushOrCompaction();
 		usleep(100000);
 	}
-	printf("BGWorkTrigger out!\n");
+	printf("BGWorkTrigger stopped!\n");
 }
 DB::DB(DBConfig cfg) : db_path_(cfg.pm_pool_path), segment_allocator_(new SegmentAllocator(db_path_ + "/segments.pool", cfg.pm_pool_size, cfg.ssd_path, cfg.recover))
 {
 	current_memtable_idx_ = 0;
 #ifdef MASSTREE_MEMTABLE
 	mem_index_[current_memtable_idx_] = new MasstreeIndex();
-	mem_index_[1] = new MasstreeIndex();
+	mem_index_[1] = nullptr;
 #endif
 #ifdef HOT_MEMTABLE
 	mem_index_[current_memtable_idx_] = new HOTIndex(MAX_MEMTABLE_ENTRIES * 8);
@@ -64,19 +66,17 @@ DB::DB(DBConfig cfg) : db_path_(cfg.pm_pool_path), segment_allocator_(new Segmen
 	}
 	//Thread pool init: flush threads + compaction threads + flush/compaction controller threads
 	thread_pool_ = new ThreadPoolImpl();
-	thread_pool_->SetBackgroundThreads(2);
-	flush_thread_pool_ = new ThreadPoolImpl();
-	flush_thread_pool_->SetBackgroundThreads(RANGE_PARTITION_NUM);
+	thread_pool_->SetBackgroundThreads(4);
 	compaction_thread_pool_ = new ThreadPoolImpl();
 	compaction_thread_pool_->SetBackgroundThreads(RANGE_PARTITION_NUM);
 
 	// Initialize partition info
 	size_t range=(1UL<<32)/RANGE_PARTITION_NUM << 32;
 	for(size_t i=0;i<RANGE_PARTITION_NUM;i++){
-		partition_info[i].min_key=__bswap_64(range*i);
-		partition_info[i].max_key=__bswap_64(partition_info[i].min_key-1+range);
+		partition_info_[i].min_key=__bswap_64(range*i);
+		partition_info_[i].max_key=__bswap_64(range*i-1+range);
 	}
-	partition_info[RANGE_PARTITION_NUM-1].max_key=MAX_UINT64;
+	partition_info_[RANGE_PARTITION_NUM-1].max_key=MAX_UINT64;
 
 #ifdef BUFFER_WAL_MEMTABLE
 	for (size_t i = 0; i < LSN_MAP_SIZE; i++)
@@ -396,9 +396,8 @@ bool DB::BGFlush()
 	usleep(100); // just wait for all client put over, instead of checking client state with a shared value
 	// 3. core steps
 	DEBUG("flush step 3");
-	FlushJob *fj = new FlushJob(mem_index_[target_memtable_idx], target_memtable_idx, segment_allocator_, current_version_, manifest_);
-	auto ret = fj->run();
-	delete fj;
+	FlushJob fj(mem_index_[target_memtable_idx], target_memtable_idx, segment_allocator_, current_version_, manifest_, partition_info_);
+	auto ret = fj.run();
 	// 4. change memtable state to EMPTY
 	DEBUG("step 4");
 	memtable_states_[target_memtable_idx].state = MemTableStates::EMPTY;
@@ -425,7 +424,7 @@ bool DB::BGFlush()
 
 bool DB::BGCompaction()
 {
-	CompactionJob *c = new CompactionJob(segment_allocator_, current_version_, manifest_);
+	CompactionJob *c = new CompactionJob(segment_allocator_, current_version_, manifest_, partition_info_,compaction_thread_pool_);
 	// 1 PickCompaction (lock, freeze pst range)
 	stopwatch_t sw;
 	sw.start();
@@ -450,7 +449,8 @@ bool DB::BGCompaction()
 	DEBUG("RunCompaction start");
 	sw.clear();
 	sw.start();
-	ret = c->RunCompaction();
+	// ret = c->RunCompaction();
+	ret = c->RunSubCompactionParallel();
 	ms = sw.elapsed<std::chrono::milliseconds>();
 	DEBUG("RunCompaction end, time: %f ms", ms);
 	total_ms += ms;
@@ -465,7 +465,8 @@ bool DB::BGCompaction()
 	DEBUG("CleanCompaction start");
 	sw.clear();
 	sw.start();
-	c->CleanCompaction();
+	// c->CleanCompaction();
+	c->CleanCompactionWhenUsingSubCompaction();
 	ms = sw.elapsed<std::chrono::milliseconds>();
 	DEBUG("CleanCompaction end, time: %f ms", ms);
 	total_ms += ms;
@@ -493,6 +494,6 @@ void DB::WaitForFlushAndCompaction()
 
 void DB::PrintPMUsage()
 {
-	printf("---------PM Usage----------\n");
+	// printf("---------PM Usage----------\n");
 	segment_allocator_->PrintPMUsage();
 }

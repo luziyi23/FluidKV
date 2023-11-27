@@ -22,9 +22,11 @@ public:
     virtual uint64_t GetCurrentMaxKey()=0;
     virtual uint64_t Flush()=0;
     virtual int PersistCheckpoint()=0;
+	virtual int Empty(){return false;}
 
 private:
     virtual void allocate_block()=0;
+	
 };
 
 
@@ -35,6 +37,7 @@ private:
     SortedSegment *current_segment_;
     PDataBlockPmWrapper blocks_buf_;
     std::vector<SortedSegment*> used_segments_;
+	int num = 0;
 
 public:
     DataBlockWriterPm(SegmentAllocator *allocator);
@@ -45,6 +48,7 @@ public:
     virtual uint64_t GetCurrentMaxKey() override;
     virtual uint64_t Flush() override;
     virtual int PersistCheckpoint() override;
+	virtual int Empty() override;
 
 private:
     virtual void allocate_block() override;

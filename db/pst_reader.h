@@ -152,6 +152,7 @@ public:
 	 * @return false 
 	 */
 	bool MoveTo(size_t key){
+		if(current_pst_idx_ >= pst_list_.size())return false;
 		while (__bswap_64(pst_list_[current_pst_idx_].meta.max_key_) < __bswap_64(key))
 		{
 			current_pst_idx_++;

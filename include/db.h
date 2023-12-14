@@ -143,7 +143,7 @@ public: // TODO: change to private
         if (!read_optimized_mode_)
         {
             read_optimized_mode_ = true;
-            INFO("read_optimized_mode_ = true");
+            LOG("read_optimized_mode_ = true");
         }
     }
     void DisableReadOptimizedMode()
@@ -151,7 +151,7 @@ public: // TODO: change to private
         if (read_optimized_mode_)
         {
             read_optimized_mode_ = false;
-            INFO("read_optimized_mode_ = false");
+            LOG("read_optimized_mode_ = false");
         }
     }
     void EnableReadOnlyMode()
@@ -159,7 +159,7 @@ public: // TODO: change to private
         if (!read_only_mode_)
         {
             read_only_mode_ = true;
-            INFO("read_only_mode_ = true");
+            LOG("read_only_mode_ = true");
         }
     }
     void DisableReadOnlyMode()
@@ -167,7 +167,7 @@ public: // TODO: change to private
         if (read_only_mode_)
         {
             read_only_mode_ = false;
-            INFO("read_only_mode_ = false");
+            LOG("read_only_mode_ = false");
         }
     }
 };

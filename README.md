@@ -45,7 +45,7 @@ $ sudo mount -o dax /dev/pmem0 /mnt/pmem
 
 Build FluidKV with CMake:
 ```shell
-$ cmake -B build # use -DKV_SEPARATION=ON to enable key-value separation for supporting variable-sized value
+$ cmake -B build # use -DKV_SEPARATION=ON/OFF to enable/disable key-value separation for supporting variable-sized value
 $ cmake --build build -j${n_proc}
 ```
 

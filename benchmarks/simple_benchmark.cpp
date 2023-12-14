@@ -12,8 +12,8 @@
 #include "util/stopwatch.hpp"
 #include "util/kgen.h"
 
-DEFINE_uint64(num, 200000000, "Total number of data");
-DEFINE_uint64(num_ops, 100000000, "Number of operations for each benchmark");
+DEFINE_uint64(num, 20000000, "Total number of data");
+DEFINE_uint64(num_ops, 10000000, "Number of operations for each benchmark");
 DEFINE_string(benchmarks, "read", "write: random update, read: random get");
 DEFINE_uint64(threads, 1, "Number of user threads during loading and benchmarking");
 DEFINE_uint64(value_size, 8, "value size, only available with KV separation enabled");
@@ -114,6 +114,10 @@ int main(int argc, char **argv)
     std::cout << "KV separation is enabled" << std::endl;
 #endif
 #endif
+std::cout << " number of thread: " << FLAGS_threads << 
+				"\n data volume: "<< FLAGS_num <<
+				"\n operation: "  << FLAGS_num_ops <<
+				"\n benchmark: " << FLAGS_benchmarks <<  std::endl;
     if (FLAGS_num == 0)
     {
         std::fprintf(stderr, "Invalid flag 'num=%lu'\n", FLAGS_num);

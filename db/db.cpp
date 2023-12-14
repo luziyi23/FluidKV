@@ -287,9 +287,9 @@ bool DB::MayTriggerFlushOrCompaction()
 		}
 	}
 	// Compaction
-	auto ret = false;
-	ret = MayTriggerCompaction();
-	return ret;
+	// auto ret = false;
+	// ret = MayTriggerCompaction();
+	return true;
 }
 
 bool DB::MayTriggerCompaction()
@@ -396,10 +396,36 @@ bool DB::BGFlush()
 	usleep(100); // just wait for all client put over, instead of checking client state with a shared value
 	// 3. core steps
 	DEBUG("flush step 3");
-	FlushJob fj(mem_index_[target_memtable_idx], target_memtable_idx, segment_allocator_, current_version_, manifest_, partition_info_);
-	auto ret = fj.run();
-	// 4. change memtable state to EMPTY
+	CompactionJob *c = new CompactionJob(segment_allocator_, mem_index_[target_memtable_idx], current_version_, manifest_, partition_info_,compaction_thread_pool_);
+	c->PickCompaction();
+	c->RunSubCompactionParallel();
+	c->CleanCompactionWhenUsingSubCompaction();
+	// 4. clean old logs
 	DEBUG("step 4");
+	std::vector<uint64_t> segment_list;
+	segment_allocator_->GetElementsFromLogGroup(target_memtable_idx, &segment_list);
+	LOG("delete obsolute index and log segments: %lu ,%lu", segment_list.size(), segment_list[0]);
+#ifndef KV_SEPARATE
+	manifest_->AddFlushLog(segment_list);
+#endif
+	for (auto &seg_id : segment_list)
+	{
+		// TODO: add a new function to free a segment without reopening it
+		LOG("ready to delete log segment %lu", seg_id);
+		auto log_seg = segment_allocator_->GetLogSegment(seg_id);
+#ifdef KV_SEPARATE
+		segment_allocator_->CloseSegment(log_seg, true);
+#else
+		segment_allocator_->FreeSegment(log_seg);
+#endif
+	}
+	LOG("delete over");
+#ifndef KV_SEPARATE
+	manifest_->ClearFlushLog();
+#endif
+
+	// 5. change memtable state to EMPTY
+	DEBUG("step 5");
 	memtable_states_[target_memtable_idx].state = MemTableStates::EMPTY;
 	int expect = 0;
 	DEBUG("before delete memtable");
@@ -424,59 +450,59 @@ bool DB::BGFlush()
 
 bool DB::BGCompaction()
 {
-	CompactionJob *c = new CompactionJob(segment_allocator_, current_version_, manifest_, partition_info_,compaction_thread_pool_);
-	// 1 PickCompaction (lock, freeze pst range)
-	stopwatch_t sw;
-	sw.start();
-	DEBUG("PickCompaction start");
-	auto num = c->PickCompaction();
-	auto ms = sw.elapsed<std::chrono::milliseconds>();
-	auto total_ms = ms;
-	DEBUG("PickCompaction end, time: %f ms", ms);
-	if (num == 0)
-	{
-		is_l0_compacting_ = false;
-		return false;
-	}
-	// 2 Prepare
-	auto ret = c->CheckPmRoomEnough();
-	if (!ret)
-	{
-		is_l0_compacting_ = false;
-		return false;
-	}
-	// 3 Merge sorting
-	DEBUG("RunCompaction start");
-	sw.clear();
-	sw.start();
-	// ret = c->RunCompaction();
-	ret = c->RunSubCompactionParallel();
-	ms = sw.elapsed<std::chrono::milliseconds>();
-	DEBUG("RunCompaction end, time: %f ms", ms);
-	total_ms += ms;
-	// exit(-1);
-	if (!ret)
-	{
-		c->RollbackCompaction();
-		is_l0_compacting_ = false;
-		return false;
-	}
-	// 4 delete obsolute psts and change level0 indexes
-	DEBUG("CleanCompaction start");
-	sw.clear();
-	sw.start();
-	// c->CleanCompaction();
-	c->CleanCompactionWhenUsingSubCompaction();
-	ms = sw.elapsed<std::chrono::milliseconds>();
-	DEBUG("CleanCompaction end, time: %f ms", ms);
-	total_ms += ms;
-	is_l0_compacting_ = false;
-	DEBUG("before compaction end");
-	print_dram_consuption();
-	delete c;
-	print_dram_consuption();
-	INFO("comapction end, time=%f ms", total_ms);
-	MayTriggerFlushOrCompaction();
+	// CompactionJob *c = new CompactionJob(segment_allocator_, current_version_, manifest_, partition_info_,compaction_thread_pool_);
+	// // 1 PickCompaction (lock, freeze pst range)
+	// stopwatch_t sw;
+	// sw.start();
+	// DEBUG("PickCompaction start");
+	// auto num = c->PickCompaction();
+	// auto ms = sw.elapsed<std::chrono::milliseconds>();
+	// auto total_ms = ms;
+	// DEBUG("PickCompaction end, time: %f ms", ms);
+	// if (num == 0)
+	// {
+	// 	is_l0_compacting_ = false;
+	// 	return false;
+	// }
+	// // 2 Prepare
+	// auto ret = c->CheckPmRoomEnough();
+	// if (!ret)
+	// {
+	// 	is_l0_compacting_ = false;
+	// 	return false;
+	// }
+	// // 3 Merge sorting
+	// DEBUG("RunCompaction start");
+	// sw.clear();
+	// sw.start();
+	// // ret = c->RunCompaction();
+	// ret = c->RunSubCompactionParallel();
+	// ms = sw.elapsed<std::chrono::milliseconds>();
+	// DEBUG("RunCompaction end, time: %f ms", ms);
+	// total_ms += ms;
+	// // exit(-1);
+	// if (!ret)
+	// {
+	// 	c->RollbackCompaction();
+	// 	is_l0_compacting_ = false;
+	// 	return false;
+	// }
+	// // 4 delete obsolute psts and change level0 indexes
+	// DEBUG("CleanCompaction start");
+	// sw.clear();
+	// sw.start();
+	// // c->CleanCompaction();
+	// c->CleanCompactionWhenUsingSubCompaction();
+	// ms = sw.elapsed<std::chrono::milliseconds>();
+	// DEBUG("CleanCompaction end, time: %f ms", ms);
+	// total_ms += ms;
+	// is_l0_compacting_ = false;
+	// DEBUG("before compaction end");
+	// print_dram_consuption();
+	// delete c;
+	// print_dram_consuption();
+	// INFO("comapction end, time=%f ms", total_ms);
+	// MayTriggerFlushOrCompaction();
 
 	return true;
 }

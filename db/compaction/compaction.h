@@ -13,13 +13,16 @@ class CompactionJob
 {
 private:
     SegmentAllocator *seg_allocater_;
+	Index* memtable_index_;
     Version *version_;
     Manifest *manifest_;
     PSTBuilder pst_builder_;
     PSTDeleter pst_deleter_;
     const unsigned output_seq_no_;
 
-    std::vector<std::vector<TaggedPstMeta>> inputs_;
+	std::vector<uint64_t> input_keys_;
+	std::vector<uint64_t> input_values_;
+    std::vector<TaggedPstMeta> input_psts_;
     std::vector<TaggedPstMeta> outputs_;
 	std::vector<TaggedPstMeta> partition_outputs_[RANGE_PARTITION_NUM];
 
@@ -33,7 +36,7 @@ private:
 	ThreadPoolImpl* compaction_thread_pool_;
 
 public:
-    CompactionJob(SegmentAllocator *seg_alloc, Version *target_version, Manifest *manifest,PartitionInfo* partition_info,ThreadPoolImpl* thread_pool);
+    CompactionJob(SegmentAllocator *seg_alloc,Index* memtable_index, Version *target_version, Manifest *manifest,PartitionInfo* partition_info,ThreadPoolImpl* thread_pool);
     ~CompactionJob();
 
     bool CheckPmRoomEnough(); // with segment allocator

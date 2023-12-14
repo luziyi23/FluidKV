@@ -90,19 +90,6 @@ bool FlushJob::run()
 	}
 	FlushPST();
 
-	/** just for validation
-	RowIterator *row = new RowIterator(&pst_reader_, output_pst_list_);
-	size_t cmax = row->GetCurrentKey();
-	size_t kk;
-	while (kk = row->NextKey())
-	{
-		if (__bswap_64(k) < __bswap_64(cmax))
-			ERROR_EXIT("error sequence");
-		cmax = k;
-	}
-	delete row;
-	**/
-
 	// now the new tree can be read
 	version_->UpdateLevel0ReadTail();
 	// delete obsolute index and log segments
